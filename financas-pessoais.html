@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finanças Pessoais</title>
+
+  <!-- Google Fonts: DM Serif Display for headings, DM Sans for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ============================================================
+       CSS VARIABLES — Change colors here to restyle the whole app
+       ============================================================ */
+    :root {
+      --bg:         #0f1117;        /* page background */
+      --surface:    #1a1d27;        /* cards and form background */
+      --border:     #2a2d3a;        /* subtle borders */
+      --text:       #e8eaf0;        /* main text */
+      --muted:      #6b7080;        /* secondary / placeholder text */
+      --accent:     #f0c040;        /* yellow accent — brand color */
+      --income:     #3dd68c;        /* green for receitas */
+      --expense:    #f26b6b;        /* red for despesas */
+      --radius:     14px;           /* border radius used everywhere */
+      --shadow:     0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    /* ============================================================
+       RESET & BASE — Remove browser defaults, set box-model
+       ============================================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ============================================================
+       LAYOUT WRAPPER — Keeps content from going too wide
+       ============================================================ */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* ============================================================
+       HEADER — App title and subtitle
+       ============================================================ */
+    header {
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5vw, 3rem); /* clamp = responsive font size */
+      color: var(--accent);
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+
+    header h1 span {
+      font-style: italic;
+      color: var(--text);
+    }
+
+    header p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* ============================================================
+       NOTIFICATION BANNER
+       ============================================================ */
+    #notification-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #2a2410;
+      border: 1px solid #5a4a10;
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      font-size: 0.9rem;
+      color: #c8a820;
+    }
+
+    #notification-banner button {
+      margin-left: auto;
+      background: var(--accent);
+      color: #111;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    #notification-banner button:hover { opacity: 0.85; }
+
+    /* ============================================================
+       SUMMARY CARDS — Balance, Income, Expenses
+       ============================================================ */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.10s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+
+    /* Colored left border strip */
+    .card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+    }
+    .card.balance::before  { background: var(--accent); }
+    .card.income::before   { background: var(--income); }
+    .card.expense::before  { background: var(--expense); }
+
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .card-value {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .card.balance  .card-value { color: var(--accent); }
+    .card.income   .card-value { color: var(--income); }
+    .card.expense  .card-value { color: var(--expense); }
+
+    /* ============================================================
+       FORM PANEL — Add new transaction
+       ============================================================ */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 36px;
+      animation: fadeUp 0.4s 0.2s ease both;
+    }
+
+    .panel h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem;
+      margin-bottom: 22px;
+      color: var(--text);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .form-grid .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      color-scheme: dark;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(240, 192, 64, 0.15);
+    }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 8px;
+      padding: 14px;
+      background: var(--accent);
+      color: #111;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: transform 0.15s, opacity 0.2s;
+    }
+
+    .btn-submit:hover  { opacity: 0.9; }
+    .btn-submit:active { transform: scale(0.98); }
+
+    /* ============================================================
+       TRANSACTION TABLE
+       ============================================================ */
+    .table-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: fadeUp 0.4s 0.3s ease both;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-header h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem;
+    }
+
+    .count-badge {
+      background: var(--border);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 4px 10px;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      animation: fadeUp 0.25s ease both;
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    tbody td {
+      padding: 14px 24px;
+      font-size: 0.92rem;
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .type-badge.receita {
+      background: rgba(61, 214, 140, 0.15);
+      color: var(--income);
+    }
+
+    .type-badge.despesa {
+      background: rgba(242, 107, 107, 0.15);
+      color: var(--expense);
+    }
+
+    .amount.receita { color: var(--income); font-weight: 600; }
+    .amount.despesa { color: var(--expense); font-weight: 600; }
+
+    .btn-delete {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-delete:hover {
+      border-color: var(--expense);
+      color: var(--expense);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--muted);
+    }
+
+    .empty-state p:first-child {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    /* ============================================================
+       KEYFRAME ANIMATIONS
+       ============================================================ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .container { padding: 24px 14px 60px; }
+      .panel { padding: 20px 14px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <h1>Minhas <span>Finanças</span></h1>
+    <p>Controle simples e rápido das suas receitas e despesas.</p>
+  </header>
+
+  <!-- NOTIFICATION PERMISSION BANNER -->
+  <div id="notification-banner">
+    🔔 Ative notificações para receber alertas de gastos altos.
+    <button onclick="requestNotificationPermission()">Ativar</button>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="summary-grid">
+    <div class="card balance">
+      <div class="card-label">Saldo Total</div>
+      <div class="card-value" id="total-balance">R$ 0,00</div>
+    </div>
+    <div class="card income">
+      <div class="card-label">Total Receitas</div>
+      <div class="card-value" id="total-income">R$ 0,00</div>
+    </div>
+    <div class="card expense">
+      <div class="card-label">Total Despesas</div>
+      <div class="card-value" id="total-expenses">R$ 0,00</div>
+    </div>
+  </div>
+
+  <!-- ADD TRANSACTION FORM -->
+  <div class="panel">
+    <h2>Nova Transação</h2>
+    <form id="transaction-form" onsubmit="handleSubmit(event)">
+      <div class="form-grid">
+
+        <div class="field full-width">
+          <label for="description">Descrição</label>
+          <input
+            type="text"
+            id="description"
+            placeholder="Ex: Salário, Aluguel, Supermercado..."
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="amount">Valor (R$)</label>
+          <input
+            type="number"
+            id="amount"
+            placeholder="0,00"
+            min="0.01"
+            step="0.01"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="type">Tipo</label>
+          <select id="type" required>
+            <option value="receita">💚 Receita</option>
+            <option value="despesa">🔴 Despesa</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="date">Data</label>
+          <input type="date" id="date" required />
+        </div>
+
+      </div>
+      <button type="submit" class="btn-submit">+ Adicionar Transação</button>
+    </form>
+  </div>
+
+  <!-- TRANSACTIONS TABLE -->
+  <div class="table-wrapper">
+    <div class="table-header">
+      <h2>Histórico</h2>
+      <span class="count-badge" id="count-badge">0 registros</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="transactions-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /.container -->
+
+<script>
+
+  // ==============================================================
+  // 1. DATA LAYER — Loading and saving to localStorage
+  // ==============================================================
+
+  /*
+    localStorage only stores strings.
+    JSON.stringify turns Array → String  (to save)
+    JSON.parse turns String → Array      (to load)
+    If nothing saved yet, we start with an empty array [].
+  */
+  function loadTransactions() {
+    const raw = localStorage.getItem('transactions');
+    return raw ? JSON.parse(raw) : [];
+  }
+
+  function saveToStorage(transactions) {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  }
+
+  // ==============================================================
+  // 2. FORM HANDLING — What happens when user clicks "Adicionar"
+  // ==============================================================
+
+  function handleSubmit(event) {
+    // Prevent default browser behavior (page reload on submit)
+    event.preventDefault();
+
+    // Read values from each form field
+    const description = document.getElementById('description').value.trim();
+    const amount      = parseFloat(document.getElementById('amount').value);
+    const type        = document.getElementById('type').value;
+    const date        = document.getElementById('date').value;
+
+    // Build a transaction object with a unique ID
+    // Date.now() returns milliseconds since 1970 — always unique
+    const transaction = {
+      id:          Date.now(),
+      description: description,
+      amount:      amount,
+      type:        type,
+      date:        date
+    };
+
+    // Load existing list, push new item, save back
+    const transactions = loadTransactions();
+    transactions.push(transaction);
+    saveToStorage(transactions);
+
+    // Check if we need to send a "high expense" notification
+    if (type === 'despesa' && amount > 1000) {
+      sendNotification(
+        '⚠️ Atenção: gasto alto registrado!',
+        `${description} — R$ ${formatCurrency(amount)}`
+      );
+    }
+
+    // Re-render the UI with updated data
+    renderAll();
+
+    // Clear the form so the user can add another transaction
+    document.getElementById('transaction-form').reset();
+
+    // Restore today's date after reset clears the date field
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+  }
+
+  // ==============================================================
+  // 3. DELETE — Remove a transaction by its ID
+  // ==============================================================
+
+  function deleteTransaction(id) {
+    // filter() keeps every item EXCEPT the one matching this id
+    const transactions = loadTransactions().filter(t => t.id !== id);
+    saveToStorage(transactions);
+    renderAll();
+  }
+
+  // ==============================================================
+  // 4. RENDERING — Build the HTML table rows from data
+  // ==============================================================
+
+  function renderTransactions(transactions) {
+    const tbody = document.getElementById('transactions-body');
+
+    // Empty state when there's nothing to show
+    if (transactions.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">
+              <p>📭</p>
+              <p>Nenhuma transação ainda. Adicione a primeira acima!</p>
+            </div>
+          </td>
+        </tr>
+      `;
+      document.getElementById('count-badge').textContent = '0 registros';
+      return;
+    }
+
+    /*
+      [...transactions]  — copies the array so we don't mutate the original
+      .reverse()         — newest items appear first
+      .map(t => `...`)   — turns each transaction object into an HTML string
+      .join('')          — combines all strings into one
+    */
+    tbody.innerHTML = [...transactions].reverse().map(t => `
+      <tr>
+        <td>${escapeHtml(t.description)}</td>
+        <td>
+          <span class="type-badge ${t.type}">
+            ${t.type === 'receita' ? 'Receita' : 'Despesa'}
+          </span>
+        </td>
+        <td class="amount ${t.type}">
+          ${t.type === 'receita' ? '+' : '-'} R$ ${formatCurrency(t.amount)}
+        </td>
+        <td>${formatDate(t.date)}</td>
+        <td>
+          <button class="btn-delete" onclick="deleteTransaction(${t.id})">
+            remover
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    // Update the count badge
+    const n = transactions.length;
+    document.getElementById('count-badge').textContent =
+      `${n} registro${n !== 1 ? 's' : ''}`;
+  }
+
+  // ==============================================================
+  // 5. SUMMARY — Calculate and display totals
+  // ==============================================================
+
+  function updateSummary(transactions) {
+    /*
+      filter() selects only one type, then
+      reduce() adds all amounts together starting from 0
+    */
+    const totalIncome = transactions
+      .filter(t => t.type === 'receita')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpenses = transactions
+      .filter(t => t.type === 'despesa')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const balance = totalIncome - totalExpenses;
+
+    document.getElementById('total-balance').textContent  = `R$ ${formatCurrency(balance)}`;
+    document.getElementById('total-income').textContent   = `R$ ${formatCurrency(totalIncome)}`;
+    document.getElementById('total-expenses').textContent = `R$ ${formatCurrency(totalExpenses)}`;
+  }
+
+  // ==============================================================
+  // 6. MAIN RENDER — Calls both display functions together
+  // ==============================================================
+
+  function renderAll() {
+    const transactions = loadTransactions();
+    renderTransactions(transactions);
+    updateSummary(transactions);
+  }
+
+  // ==============================================================
+  // 7. NOTIFICATIONS
+  // ==============================================================
+
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      alert('Seu navegador não suporta notificações.');
+      return;
+    }
+
+    // This popup can only be triggered by a user action (button click)
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        // Hide the banner — permission is now set
+        document.getElementById('notification-banner').style.display = 'none';
+
+        // Confirm with a welcome notification
+        sendNotification('✅ Notificações ativadas!', 'Você receberá alertas de gastos altos.');
+
+        // Start the 1-minute reminder timer
+        scheduleReminder();
+      }
+    });
+  }
+
+  function sendNotification(title, body) {
+    // Only send if the user already granted permission
+    if (Notification.permission === 'granted') {
+      new Notification(title, {
+        body: body,
+        icon: 'https://cdn-icons-png.flaticon.com/512/2331/2331970.png'
+      });
+    }
+  }
+
+  function scheduleReminder() {
+    // setTimeout runs a function ONCE after a delay in milliseconds
+    // 60000 ms = 60 seconds = 1 minute
+    setTimeout(() => {
+      sendNotification(
+        '📝 Lembrete',
+        'Não esqueça de registrar seus gastos de hoje!'
+      );
+    }, 60000);
+  }
+
+  // ==============================================================
+  // 8. UTILITY / HELPER FUNCTIONS
+  // ==============================================================
+
+  // Formats 1234.5 → "1.234,50" using Brazilian locale
+  function formatCurrency(value) {
+    return Math.abs(value).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  // Formats "2025-04-10" → "10/04/2025"
+  function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  /*
+    Prevents XSS attacks.
+    If user types "<script>..." as a description, this makes it
+    render as plain text, not executable code.
+  */
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  // ==============================================================
+  // 9. INITIALIZATION — Runs immediately when the page loads
+  // ==============================================================
+
+  // If notifications were already granted in a previous visit, hide the banner
+  if (Notification.permission === 'granted') {
+    document.getElementById('notification-banner').style.display = 'none';
+    scheduleReminder(); // restart the reminder timer on reload
+  }
+
+  // Pre-fill date input with today's date
+  document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+  // Load saved data and render everything
+  renderAll();
+
+</script>
+</body>
+</html>
